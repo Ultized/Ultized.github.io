@@ -35,7 +35,7 @@ function createWorker(self) {
   let vertexCount = 0;
   let viewProj;
   let lastProj = [];
-  let depthIndex = new Uint32Array();
+  // let depthIndex = new Uint32Array();
   let lastVertexCount = 0;
   let positions;
 
@@ -146,7 +146,7 @@ function createWorker(self) {
   
 
     // 使用快速排序对 sizeList 数组进行排序
-    depthIndex = new Uint32Array(vertexCount);
+    let depthIndex = new Uint32Array(vertexCount);
     for (let i = 0; i < vertexCount; i++) depthIndex[i] = i;
     const {arr: sortedArray, index: sortedIndices} = quickSort(sizeList, depthIndex);
 
