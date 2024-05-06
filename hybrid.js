@@ -315,13 +315,13 @@ function createWorker(self) {
         positions[3 * i + 2] = texture[16 * i + 2];
       }
       throttledSort();
-      console.log("throttledSort");
+      console.log("throttledSort 0");
     } else if (e.data.vertexCount) {
       vertexCount = e.data.vertexCount;
     } else if (e.data.view) {
       viewProj = e.data.view;
       throttledSort();
-      console.log("throttledSort");
+      console.log("throttledSort 1");
     } else if (e.data.ply) {
       vertexCount = 0;
       vertexCount = processPlyBuffer(e.data.ply);
