@@ -95,14 +95,14 @@ function createWorker(self) {
     }
 
     // This is a 16 bit single-pass counting sort
-    let depthInv = ( 256 * 256 *  256 * 256) / (maxDepth - minDepth);
-    let counts0 = new Uint32Array(256 * 256 *  256 * 256);
+    let depthInv = ( 256 * 256 * 256 ) / (maxDepth - minDepth);
+    let counts0 = new Uint32Array(256 * 256 * 256);
     for (let i = 0; i < vertexCount; i++) {
       sizeList[i] = ((sizeList[i] - minDepth) * depthInv) | 0;
       counts0[sizeList[i]]++;
     }
-    let starts0 = new Uint32Array(256 * 256 *  256 * 256);
-    for (let i = 1; i < 256 * 256 *  256 * 256; i++) starts0[i] = starts0[i - 1] + counts0[i - 1];
+    let starts0 = new Uint32Array(256 * 256 * 256);
+    for (let i = 1; i < 256 * 256 * 256; i++) starts0[i] = starts0[i - 1] + counts0[i - 1];
     depthIndex = new Uint32Array(vertexCount);
     for (let i = 0; i < vertexCount; i++) depthIndex[starts0[sizeList[i]]++] = i;
 
