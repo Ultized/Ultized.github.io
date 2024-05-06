@@ -146,9 +146,9 @@ function createWorker(self) {
   
 
     // 使用快速排序对 sizeList 数组进行排序
-    let depthIndex = new Uint32Array(vertexCount);
-    for (let i = 0; i < vertexCount; i++) depthIndex[i] = i;
-    const {arr: sortedArray, index: sortedIndices} = quickSort(sizeList, depthIndex);
+    let depthIndexin = new Uint32Array(vertexCount);
+    for (let i = 0; i < vertexCount; i++) depthIndexin[i] = i;
+    const {arr: sortedArray, index: depthIndex} = quickSort(sizeList, depthIndexin);
     console.log(vertexCount);
     console.log("Indices after sorting:", depthIndex.length);
 
@@ -156,7 +156,7 @@ function createWorker(self) {
     console.timeEnd("sort");
 
     lastProj = viewProj;
-    self.postMessage({sortedIndices, viewProj, vertexCount}, [sortedIndices.buffer]);
+    self.postMessage({depthIndex, viewProj, vertexCount}, [depthIndex.buffer]);
   }
 
   const throttledSort = () => {
