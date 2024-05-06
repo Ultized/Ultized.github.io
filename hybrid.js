@@ -82,29 +82,65 @@ function createWorker(self) {
       lastVertexCount = vertexCount;
     }
 
+    // console.time("sort");
+    // let maxDepth = -Infinity;
+    // let minDepth = Infinity;
+    // let sizeList = new Int32Array(vertexCount);
+    // for (let i = 0; i < vertexCount; i++) {
+    //   let depth =
+    //     ((viewProj[2] * positions[3 * i + 0] + viewProj[6] * positions[3 * i + 1] + viewProj[10] * positions[3 * i + 2]) * 256 *256) | 0;
+    //   sizeList[i] = depth;
+    //   if (depth > maxDepth) maxDepth = depth;
+    //   if (depth < minDepth) minDepth = depth;
+    // }
+
+    // // This is a 16 bit single-pass counting sort
+    // let depthInv = ( 256 * 256 * 256 ) / (maxDepth - minDepth);
+    // let counts0 = new Uint32Array(256 * 256 * 256);
+    // for (let i = 0; i < vertexCount; i++) {
+    //   sizeList[i] = ((sizeList[i] - minDepth) * depthInv) | 0;
+    //   counts0[sizeList[i]]++;
+    // }
+    // let starts0 = new Uint32Array(256 * 256 * 256);
+    // for (let i = 1; i < 256 * 256 * 256; i++) starts0[i] = starts0[i - 1] + counts0[i - 1];
+    // depthIndex = new Uint32Array(vertexCount);
+    // for (let i = 0; i < vertexCount; i++) depthIndex[starts0[sizeList[i]]++] = i;
+
+    // console.timeEnd("sort");
+
     console.time("sort");
+
+    // 计算深度并填充到 sizeList 数组中
     let maxDepth = -Infinity;
     let minDepth = Infinity;
-    let sizeList = new Int32Array(vertexCount);
+    let sizeList = new Array(vertexCount);
     for (let i = 0; i < vertexCount; i++) {
-      let depth =
-        ((viewProj[2] * positions[3 * i + 0] + viewProj[6] * positions[3 * i + 1] + viewProj[10] * positions[3 * i + 2]) * 256 *256) | 0;
-      sizeList[i] = depth;
-      if (depth > maxDepth) maxDepth = depth;
-      if (depth < minDepth) minDepth = depth;
+        let depth = ((viewProj[2] * positions[3 * i + 0] + viewProj[6] * positions[3 * i + 1] + viewProj[10] * positions[3 * i + 2]) * 256 * 256) | 0;
+        sizeList[i] = depth;
+        if (depth > maxDepth) maxDepth = depth;
+        if (depth < minDepth) minDepth = depth;
     }
 
-    // This is a 16 bit single-pass counting sort
-    let depthInv = ( 256 * 256 * 256 ) / (maxDepth - minDepth);
-    let counts0 = new Uint32Array(256 * 256 * 256);
-    for (let i = 0; i < vertexCount; i++) {
-      sizeList[i] = ((sizeList[i] - minDepth) * depthInv) | 0;
-      counts0[sizeList[i]]++;
+    // 定义快速排序函数
+    function quickSort(arr) {
+        if (arr.length <= 1) {
+            return arr;
+        }
+        const pivot = arr[0];
+        const left = [];
+        const right = [];
+        for (let i = 1; i < arr.length; i++) {
+            if (arr[i] < pivot) {
+                left.push(arr[i]);
+            } else {
+                right.push(arr[i]);
+            }
+        }
+        return quickSort(left).concat(pivot, quickSort(right));
     }
-    let starts0 = new Uint32Array(256 * 256 * 256);
-    for (let i = 1; i < 256 * 256 * 256; i++) starts0[i] = starts0[i - 1] + counts0[i - 1];
-    depthIndex = new Uint32Array(vertexCount);
-    for (let i = 0; i < vertexCount; i++) depthIndex[starts0[sizeList[i]]++] = i;
+
+    // 使用快速排序对 sizeList 数组进行排序
+    sizeList = quickSort(sizeList);
 
     console.timeEnd("sort");
 
