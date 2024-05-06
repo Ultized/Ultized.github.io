@@ -256,11 +256,13 @@ function createWorker(self) {
         positions[3 * i + 2] = texture[16 * i + 2];
       }
       throttledSort();
+      console.log("throttledSort");
     } else if (e.data.vertexCount) {
       vertexCount = e.data.vertexCount;
     } else if (e.data.view) {
       viewProj = e.data.view;
       throttledSort();
+      console.log("throttledSort");
     } else if (e.data.ply) {
       vertexCount = 0;
       vertexCount = processPlyBuffer(e.data.ply);
@@ -890,7 +892,7 @@ async function main() {
       gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
       // gl.uniform1f(u_time, Math.sin(Date.now() / 1000) / 2 + 1 / 2);
       gl.uniform1f(u_time, Math.floor(Date.now() / 100) %10 * 0.1); 
-      
+
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
     } else {
