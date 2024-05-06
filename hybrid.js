@@ -316,7 +316,7 @@ const vertexShaderSource = `
       vec4 rot = vec4(unpackHalf2x16(static0.w).xy, unpackHalf2x16(static1.x).xy) + trot;
       vec3 scale = vec3(unpackHalf2x16(static1.y).xy, unpackHalf2x16(static1.z).x);
       rot /= sqrt(dot(rot, rot));
-      float scaleValue = 1;
+      float scaleValue = 1.0f;
       mat3 S = mat3(scale.x * scaleValue, 0.0, 0.0, 0.0, scale.y * scaleValue, 0.0, 0.0, 0.0, scale.z * scaleValue);
       mat3 R = mat3(
         1.0 - 2.0 * (rot.z * rot.z + rot.w * rot.w), 2.0 * (rot.y * rot.z - rot.x * rot.w), 2.0 * (rot.y * rot.w + rot.x * rot.z),
