@@ -130,9 +130,17 @@ function createWorker(self) {
       }
       const {arr: sortedLeft, index: leftIndices} = quickSort(left, leftIndex);
       const {arr: sortedRight, index: rightIndices} = quickSort(right, rightIndex);
+      const mergedArray = new Float32Array(sortedLeft.length + 1 + sortedRight.length);
+      mergedArray.set(sortedLeft);
+      mergedArray[sortedLeft.length] = pivot;
+      mergedArray.set(sortedRight, sortedLeft.length + 1);
+      const mergedIndex = new Uint32Array(leftIndices.length + 1 + rightIndices.length);
+      mergedIndex.set(leftIndices);
+      mergedIndex[leftIndices.length] = pivotIndex;
+      mergedIndex.set(rightIndices, leftIndices.length + 1);
       return {
-        arr: new Float32Array(sortedLeft.concat(pivot, sortedRight)),
-        index: new Uint32Array(leftIndices.concat(pivotIndex, rightIndices))
+          arr: mergedArray,
+          index: mergedIndex
       };
   }
   
