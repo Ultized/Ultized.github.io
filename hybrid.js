@@ -371,7 +371,7 @@ const fragmentShaderSource = `
   
   void main () {
       float A = -dot(vPosition, vPosition);
-      if (A < -4.0) discard;
+      if (A < -40.0) discard;
       float B = exp(A) * vColor.a;
       fragColor = vec4(B * vColor.rgb, B);
   }
@@ -1002,7 +1002,7 @@ async function main() {
     }
   };
 
-  const url = params.get("url") ? new URL(params.get("url"), "https://huggingface.co/cakewalk/splat-data/resolve/main/") : "data/model.splatv";
+  const url = params.get("url") ? new URL(params.get("url"), "https://huggingface.co/cakewalk/splat-data/resolve/main/") : "data/model (30).splatv";
   const req = await fetch(url, { mode: "cors", credentials: "omit" });
   if (req.status != 200) throw new Error(req.status + " Unable to load " + req.url);
 
