@@ -149,6 +149,8 @@ function createWorker(self) {
     let depthIndex = new Uint32Array(vertexCount);
     for (let i = 0; i < vertexCount; i++) depthIndex[i] = i;
     const {arr: sortedArray, index: sortedIndices} = quickSort(sizeList, depthIndex);
+    console.timeEnd(vertexCount);
+    console.timeEnd("Indices after sorting:", depthIndex.length);
 
 
     console.timeEnd("sort");
