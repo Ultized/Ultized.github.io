@@ -156,7 +156,7 @@ function createWorker(self) {
     console.timeEnd("sort");
 
     lastProj = viewProj;
-    self.postMessage({sortedIndices, viewProj, vertexCount }, [sortedIndices.buffer]);
+    self.postMessage({sortedIndices, viewProj, vertexCount}, [sortedIndices.buffer]);
   }
 
   const throttledSort = () => {
@@ -317,7 +317,7 @@ function createWorker(self) {
         positions[3 * i + 2] = texture[16 * i + 2];
       }
       throttledSort();
-      console.log("throttledSort 0");
+      console.log("throttledSort 0", vertexCount);
     } else if (e.data.vertexCount) {
       vertexCount = e.data.vertexCount;
     } else if (e.data.view) {
