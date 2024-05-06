@@ -85,10 +85,10 @@ function createWorker(self) {
     console.time("sort");
     let maxDepth = -Infinity;
     let minDepth = Infinity;
-    let sizeList = new Int32Array(vertexCount);
+    let sizeList = new Float32Array(vertexCount);
     for (let i = 0; i < vertexCount; i++) {
       let depth =
-        ((viewProj[2] * positions[3 * i + 0] + viewProj[6] * positions[3 * i + 1] + viewProj[10] * positions[3 * i + 2]) * 256 *256) | 0;
+        (viewProj[2] * positions[3 * i + 0] + viewProj[6] * positions[3 * i + 1] + viewProj[10] * positions[3 * i + 2]);
       sizeList[i] = depth;
       if (depth > maxDepth) maxDepth = depth;
       if (depth < minDepth) minDepth = depth;
@@ -131,8 +131,8 @@ function createWorker(self) {
       const {arr: sortedLeft, index: leftIndices} = quickSort(left, leftIndex);
       const {arr: sortedRight, index: rightIndices} = quickSort(right, rightIndex);
       return {
-          arr: sortedLeft.concat(pivot, sortedRight),
-          index: leftIndices.concat(pivotIndex, rightIndices)
+        arr: new Float32Array(sortedLeft.concat(pivot, sortedRight)),
+        index: new Uint32Array(leftIndices.concat(pivotIndex, rightIndices))
       };
   }
   
