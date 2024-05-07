@@ -39,6 +39,7 @@ function createWorker(self) {
   let lastVertexCount = 0;
   let positions;
   let motions;
+  let sort_t = 0.0;
 
   var _floatView = new Float32Array(1);
   var _int32View = new Int32Array(_floatView.buffer);
@@ -93,7 +94,7 @@ function createWorker(self) {
     return [x, y];
   }
 
-  function runSort(viewProj) {
+  function runSort(viewProj, cur_t) {
     if (!positions) return;
     // const f_buffer = new Float32Array(buffer);
     if (lastVertexCount == vertexCount) {
@@ -184,7 +185,8 @@ function createWorker(self) {
     if (!sortRunning) {
       sortRunning = true;
       let lastView = viewProj;
-      runSort(lastView);
+      let lastt = sort_t;
+      runSort(lastView, lastt);
       setTimeout(() => {
         sortRunning = false;
         if (lastView !== viewProj) {
@@ -338,11 +340,11 @@ function createWorker(self) {
         positions[3 * i + 1] = texture[16 * i + 1];
         positions[3 * i + 2] = texture[16 * i + 2];
 
-        motions.set(unpackHalf2x16(texture[16 * j + 8 + 0]), i * 10 + 0);
-        motions.set(unpackHalf2x16(texture[16 * j + 8 + 1]), i * 10 + 2);
-        motions.set(unpackHalf2x16(texture[16 * j + 8 + 2]), i * 10 + 4);
-        motions.set(unpackHalf2x16(texture[16 * j + 8 + 3]), i * 10 + 6);
-        motions.set(unpackHalf2x16(texture[16 * j + 8 + 4]), i * 10 + 8);
+        motions.set(unpackHalf2x16(texture[16 * i + 8 + 0]), i * 10 + 0);
+        motions.set(unpackHalf2x16(texture[16 * i + 8 + 1]), i * 10 + 2);
+        motions.set(unpackHalf2x16(texture[16 * i + 8 + 2]), i * 10 + 4);
+        motions.set(unpackHalf2x16(texture[16 * i + 8 + 3]), i * 10 + 6);
+        motions.set(unpackHalf2x16(texture[16 * i + 8 + 4]), i * 10 + 8);
       }
       throttledSort();
       console.log("throttledSort 0", vertexCount);
@@ -350,6 +352,7 @@ function createWorker(self) {
       vertexCount = e.data.vertexCount;
     } else if (e.data.view) {
       viewProj = e.data.view;
+      sort_t = e.data.time;
       throttledSort();
       console.log("throttledSort 1");
     } else if (e.data.ply) {
@@ -832,6 +835,7 @@ async function main() {
   });
 
   let leftGamepadTrigger, rightGamepadTrigger;
+  let frame_t = 0.0;
 
   const frame = (now) => {
     let inv = invert4(viewMatrix);
@@ -971,7 +975,7 @@ async function main() {
     let actualViewMatrix = invert4(inv2);
 
     const viewProj = multiply4(projectionMatrix, actualViewMatrix);
-    worker.postMessage({ view: viewProj });
+    worker.postMessage({ view: viewProj, time: frame_t});
 
     const currentFps = 1000 / (now - lastFrame) || 0;
     avgFps = (isFinite(avgFps) && avgFps) * 0.9 + currentFps * 0.1;
@@ -980,7 +984,12 @@ async function main() {
       document.getElementById("spinner").style.display = "none";
       gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
       // gl.uniform1f(u_time, Math.sin(Date.now() / 1000) / 2 + 1 / 2);
-      gl.uniform1f(u_time, Math.floor(Date.now() / 100) % 10 * 0.1); 
+      // gl.uniform1f(u_time, Math.floor(Date.now() / 100) % 10 * 0.1); 
+      gl.uniform1f(u_time, frame_t); 
+      frame_t = frame_t + 0.1;
+      if (frame_t >= 0.9) {
+        frame_t = 0.0;
+      }
 
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
