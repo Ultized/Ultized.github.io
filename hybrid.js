@@ -338,11 +338,11 @@ function createWorker(self) {
         positions[3 * i + 1] = texture[16 * i + 1];
         positions[3 * i + 2] = texture[16 * i + 2];
 
-        motions.set(unpackHalf2x16(texdata[16 * j + 8 + 0]), i * 10 + 0);
-        motions.set(unpackHalf2x16(texdata[16 * j + 8 + 1]), i * 10 + 2);
-        motions.set(unpackHalf2x16(texdata[16 * j + 8 + 2]), i * 10 + 4);
-        motions.set(unpackHalf2x16(texdata[16 * j + 8 + 3]), i * 10 + 6);
-        motions.set(unpackHalf2x16(texdata[16 * j + 8 + 4]), i * 10 + 8);
+        motions.set(unpackHalf2x16(texture[16 * j + 8 + 0]), i * 10 + 0);
+        motions.set(unpackHalf2x16(texture[16 * j + 8 + 1]), i * 10 + 2);
+        motions.set(unpackHalf2x16(texture[16 * j + 8 + 2]), i * 10 + 4);
+        motions.set(unpackHalf2x16(texture[16 * j + 8 + 3]), i * 10 + 6);
+        motions.set(unpackHalf2x16(texture[16 * j + 8 + 4]), i * 10 + 8);
       }
       throttledSort();
       console.log("throttledSort 0", vertexCount);
@@ -980,7 +980,7 @@ async function main() {
       document.getElementById("spinner").style.display = "none";
       gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
       // gl.uniform1f(u_time, Math.sin(Date.now() / 1000) / 2 + 1 / 2);
-      gl.uniform1f(u_time, Math.floor(Date.now() / 100) %10 * 0.1); 
+      gl.uniform1f(u_time, Math.floor(Date.now() / 100) % 10 * 0.1); 
 
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
