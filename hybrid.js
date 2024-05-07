@@ -38,6 +38,7 @@ function createWorker(self) {
   // let depthIndex = new Uint32Array();
   let lastVertexCount = 0;
   let positions;
+  let motions;
 
   var _floatView = new Float32Array(1);
   var _int32View = new Int32Array(_floatView.buffer);
@@ -68,8 +69,28 @@ function createWorker(self) {
     return (sign << 15) | (newExp << 10) | (frac >> 13);
   }
 
+  function halfToFloat(value) {
+    const s = (value & 0x8000) >> 15;
+    const e = (value & 0x7C00) >> 10;
+    const f = value & 0x03FF;
+
+    if (e === 0) {
+        return Math.pow(-1, s) * Math.pow(2, -14) * (f / Math.pow(2, 10));
+    } else if (e === 31) {
+        return (s === 0 ? Infinity : -Infinity);
+    } else {
+        return Math.pow(-1, s) * Math.pow(2, e - 15) * (1 + (f / Math.pow(2, 10)));
+    }
+  }
   function packHalf2x16(x, y) {
     return (floatToHalf(x) | (floatToHalf(y) << 16)) >>> 0;
+  }
+
+  function unpackHalf2x16(value) {
+    const mask = 0xFFFF;
+    const x = halfToFloat(value & mask);
+    const y = halfToFloat((value >> 16) & mask);
+    return [x, y];
   }
 
   function runSort(viewProj) {
@@ -88,7 +109,7 @@ function createWorker(self) {
     let sizeList = new Float32Array(vertexCount);
     for (let i = 0; i < vertexCount; i++) {
       let depth =
-        (viewProj[2] * positions[3 * i + 0] + viewProj[6] * positions[3 * i + 1] + viewProj[10] * positions[3 * i + 2]);
+        (viewProj[2] * positions[3 * i + 0] + viewProj[6] * positions[3 * i + 1] + viewProj[10] * positions[3 * i + 2]) * 100;
       sizeList[i] = depth;
       if (depth > maxDepth) maxDepth = depth;
       if (depth < minDepth) minDepth = depth;
@@ -311,10 +332,17 @@ function createWorker(self) {
       let texture = e.data.texture;
       vertexCount = Math.floor((texture.byteLength - e.data.remaining) / 4 / 16);
       positions = new Float32Array(vertexCount * 3);
+      motions = new Float32Array(vertexCount * 10);
       for (let i = 0; i < vertexCount; i++) {
         positions[3 * i + 0] = texture[16 * i + 0];
         positions[3 * i + 1] = texture[16 * i + 1];
         positions[3 * i + 2] = texture[16 * i + 2];
+
+        motions.set(unpackHalf2x16(texdata[16 * j + 8 + 0]), i * 10 + 0);
+        motions.set(unpackHalf2x16(texdata[16 * j + 8 + 1]), i * 10 + 2);
+        motions.set(unpackHalf2x16(texdata[16 * j + 8 + 2]), i * 10 + 4);
+        motions.set(unpackHalf2x16(texdata[16 * j + 8 + 3]), i * 10 + 6);
+        motions.set(unpackHalf2x16(texdata[16 * j + 8 + 4]), i * 10 + 8);
       }
       throttledSort();
       console.log("throttledSort 0", vertexCount);
