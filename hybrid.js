@@ -367,8 +367,8 @@ function createWorker(self) {
       console.log("throttledSort 0", vertexCount);
     } else if (e.data.vertexCount) {
       vertexCount = e.data.vertexCount;
-    } else if (e.data.time) {
-    // } else if (e.data.view) {
+    // } else if (e.data.time) {
+    } else if (e.data.view) {
       viewProj = e.data.view;
       sort_t = e.data.time;
       throttledSort();
