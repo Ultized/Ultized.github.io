@@ -39,6 +39,7 @@ function createWorker(self) {
   let lastVertexCount = 0;
   let positions;
   let motions;
+  let center_t;
   let sort_t = 0.0;
 
   var _floatView = new Float32Array(1);
@@ -108,9 +109,21 @@ function createWorker(self) {
     let maxDepth = -Infinity;
     let minDepth = Infinity;
     let sizeList = new Float32Array(vertexCount);
+
+    let cur_pos = new Float32Array(3);
+
+
     for (let i = 0; i < vertexCount; i++) {
+      let delta_t = cur_t - center_t[i];
+      cur_pos[0] = positions[3 * i + 0] + motions[10 * i + 0] * delta_t + motions[10 * i + 3] * delta_t * delta_t + motions[10 * i + 6] * delta_t * delta_t * delta_t ;
+      cur_pos[1] = positions[3 * i + 1] + motions[10 * i + 1] * delta_t + motions[10 * i + 4] * delta_t * delta_t + motions[10 * i + 7] * delta_t * delta_t * delta_t ;
+      cur_pos[2] = positions[3 * i + 2] + motions[10 * i + 2] * delta_t + motions[10 * i + 5] * delta_t * delta_t + motions[10 * i + 8] * delta_t * delta_t * delta_t ;
+      // cur_pos[i]
       let depth =
-        (viewProj[2] * positions[3 * i + 0] + viewProj[6] * positions[3 * i + 1] + viewProj[10] * positions[3 * i + 2]) * 100;
+        (viewProj[2] * cur_pos[0] + viewProj[6] * cur_pos[1] + viewProj[10] *  cur_pos[2]);
+
+      // let depth =
+      //   (viewProj[2] * positions[3 * i + 0] + viewProj[6] * positions[3 * i + 1] + viewProj[10] * positions[3 * i + 2]) * 100;
       sizeList[i] = depth;
       if (depth > maxDepth) maxDepth = depth;
       if (depth < minDepth) minDepth = depth;
@@ -335,6 +348,7 @@ function createWorker(self) {
       vertexCount = Math.floor((texture.byteLength - e.data.remaining) / 4 / 16);
       positions = new Float32Array(vertexCount * 3);
       motions = new Float32Array(vertexCount * 10);
+      center_t = new Float32Array(vertexCount);
       for (let i = 0; i < vertexCount; i++) {
         positions[3 * i + 0] = texture[16 * i + 0];
         positions[3 * i + 1] = texture[16 * i + 1];
@@ -345,6 +359,8 @@ function createWorker(self) {
         motions.set(unpackHalf2x16(texture[16 * i + 8 + 2]), i * 10 + 4);
         motions.set(unpackHalf2x16(texture[16 * i + 8 + 3]), i * 10 + 6);
         motions.set(unpackHalf2x16(texture[16 * i + 8 + 4]), i * 10 + 8);
+
+        center_t[i] = unpackHalf2x16(texture[16 * i + 8 + 7])[0];
       }
       throttledSort();
       console.log("throttledSort 0", vertexCount);
