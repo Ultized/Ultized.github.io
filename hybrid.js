@@ -200,7 +200,7 @@ function createWorker(self) {
       let lastView = viewProj;
       let lastt = sort_t;
       runSort(lastView, lastt);
-      console.log("cur_t", cur_t);
+      console.log("cur_t", lastt);
       setTimeout(() => {
         sortRunning = false;
         if (lastView !== viewProj) {
