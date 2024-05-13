@@ -71,27 +71,58 @@ function createWorker(self) {
     return (sign << 15) | (newExp << 10) | (frac >> 13);
   }
 
-  function halfToFloat(value) {
-    const s = (value & 0x8000) >> 15;
-    const e = (value & 0x7C00) >> 10;
-    const f = value & 0x03FF;
+  function halfToFloat(half) {
+    var sign = (half >> 15) & 0x0001;
+    var exp = (half >> 10) & 0x001f;
+    var frac = half & 0x03ff;
+    var newExp, newFrac;
 
-    if (e === 0) {
-        return Math.pow(-1, s) * Math.pow(2, -14) * (f / Math.pow(2, 10));
-    } else if (e === 31) {
-        return (s === 0 ? Infinity : -Infinity);
+    if (exp === 0) {
+        if (frac === 0) {
+            // 正零或负零
+            return sign << 31;
+        } else {
+            // 非规格化数
+            newExp = 1 - 15;
+            newFrac = frac / Math.pow(2, 10);
+        }
+    } else if (exp === 31) {
+        if (frac === 0) {
+            // 正无穷或负无穷
+            return (sign << 31) | 0x7f800000;
+        } else {
+            // NaN
+            return (sign << 31) | 0x7f800000 | (frac << 13);
+        }
     } else {
-        return Math.pow(-1, s) * Math.pow(2, e - 15) * (1 + (f / Math.pow(2, 10)));
+        // 规格化数
+        newExp = exp - 15 + 127;
+        newFrac = frac << 13;
     }
+
+    var result = (sign << 31) | (newExp << 23) | newFrac;
+
+    // 使用DataView将二进制表示解释为浮点数
+    var buffer = new ArrayBuffer(4);
+    var view = new DataView(buffer);
+    view.setUint32(0, result, false);
+    return view.getFloat32(0, false);
   }
+
   function packHalf2x16(x, y) {
     return (floatToHalf(x) | (floatToHalf(y) << 16)) >>> 0;
   }
 
   function unpackHalf2x16(value) {
+
+    var buffer = new ArrayBuffer(4);
+    var view = new DataView(buffer);
+    view.setFloat32(0, value, false);
+    var uint32View = view.getUint32(0, false);
+
     const mask = 0xFFFF;
-    const x = halfToFloat(value & mask);
-    const y = halfToFloat((value >> 16) & mask);
+    const x = halfToFloat(uint32View & mask);
+    const y = halfToFloat((uint32View >> 16) & mask);
     return [x, y];
   }
 
@@ -120,7 +151,7 @@ function createWorker(self) {
       cur_pos[2] = positions[3 * i + 2] + motions[10 * i + 2] * delta_t + motions[10 * i + 5] * delta_t * delta_t + motions[10 * i + 8] * delta_t * delta_t * delta_t ;
       // cur_pos[i]
       let depth =
-        (viewProj[2] * cur_pos[0] + viewProj[6] * cur_pos[1] + viewProj[10] *  cur_pos[2]);
+        (viewProj[2] * cur_pos[0] + viewProj[6] * cur_pos[1] + viewProj[10] *  cur_pos[2]) * 256;
 
       // let depth =
       //   (viewProj[2] * positions[3 * i + 0] + viewProj[6] * positions[3 * i + 1] + viewProj[10] * positions[3 * i + 2]) * 100;
@@ -129,66 +160,66 @@ function createWorker(self) {
       if (depth < minDepth) minDepth = depth;
     }
 
-    // // This is a 16 bit single-pass counting sort
-    // let depthInv = ( 256 * 256 * 256 ) / (maxDepth - minDepth);
-    // let counts0 = new Uint32Array(256 * 256 * 256);
-    // for (let i = 0; i < vertexCount; i++) {
-    //   sizeList[i] = ((sizeList[i] - minDepth) * depthInv) | 0;
-    //   counts0[sizeList[i]]++;
-    // }
-    // let starts0 = new Uint32Array(256 * 256 * 256);
-    // for (let i = 1; i < 256 * 256 * 256; i++) starts0[i] = starts0[i - 1] + counts0[i - 1];
-    // depthIndex = new Uint32Array(vertexCount);
-    // for (let i = 0; i < vertexCount; i++) depthIndex[starts0[sizeList[i]]++] = i;
-
-    // console.timeEnd("sort");
-
-    // 定义快速排序函数
-    function quickSort(arr, index) {
-      if (arr.length <= 1) {
-          return {arr, index};
-      }
-      const pivot = arr[0];
-      const pivotIndex = index[0];
-      const left = [];
-      const leftIndex = [];
-      const right = [];
-      const rightIndex = [];
-      for (let i = 1; i < arr.length; i++) {
-          if (arr[i] < pivot) {
-              left.push(arr[i]);
-              leftIndex.push(index[i]);
-          } else {
-              right.push(arr[i]);
-              rightIndex.push(index[i]);
-          }
-      }
-      const {arr: sortedLeft, index: leftIndices} = quickSort(left, leftIndex);
-      const {arr: sortedRight, index: rightIndices} = quickSort(right, rightIndex);
-      const mergedArray = new Float32Array(sortedLeft.length + 1 + sortedRight.length);
-      mergedArray.set(sortedLeft);
-      mergedArray[sortedLeft.length] = pivot;
-      mergedArray.set(sortedRight, sortedLeft.length + 1);
-      const mergedIndex = new Uint32Array(leftIndices.length + 1 + rightIndices.length);
-      mergedIndex.set(leftIndices);
-      mergedIndex[leftIndices.length] = pivotIndex;
-      mergedIndex.set(rightIndices, leftIndices.length + 1);
-      return {
-          arr: mergedArray,
-          index: mergedIndex
-      };
-  }
-  
-
-    // 使用快速排序对 sizeList 数组进行排序
-    let depthIndexin = new Uint32Array(vertexCount);
-    for (let i = 0; i < vertexCount; i++) depthIndexin[i] = i;
-    const {arr: sortedArray, index: depthIndex} = quickSort(sizeList, depthIndexin);
-    console.log(vertexCount);
-    console.log("Indices after sorting:", depthIndex.length);
-
+    // This is a 16 bit single-pass counting sort
+    let depthInv = ( 256 * 256 * 1 ) / (maxDepth - minDepth);
+    let counts0 = new Uint32Array(256 * 256 * 1);
+    for (let i = 0; i < vertexCount; i++) {
+      sizeList[i] = ((sizeList[i] - minDepth) * depthInv) | 0;
+      counts0[sizeList[i]]++;
+    }
+    let starts0 = new Uint32Array(256 * 256 * 1);
+    for (let i = 1; i < 256 * 256 * 1; i++) starts0[i] = starts0[i - 1] + counts0[i - 1];
+    depthIndex = new Uint32Array(vertexCount);
+    for (let i = 0; i < vertexCount; i++) depthIndex[starts0[sizeList[i]]++] = i;
 
     console.timeEnd("sort");
+
+  //   // 定义快速排序函数
+  //   function quickSort(arr, index) {
+  //     if (arr.length <= 1) {
+  //         return {arr, index};
+  //     }
+  //     const pivot = arr[0];
+  //     const pivotIndex = index[0];
+  //     const left = [];
+  //     const leftIndex = [];
+  //     const right = [];
+  //     const rightIndex = [];
+  //     for (let i = 1; i < arr.length; i++) {
+  //         if (arr[i] < pivot) {
+  //             left.push(arr[i]);
+  //             leftIndex.push(index[i]);
+  //         } else {
+  //             right.push(arr[i]);
+  //             rightIndex.push(index[i]);
+  //         }
+  //     }
+  //     const {arr: sortedLeft, index: leftIndices} = quickSort(left, leftIndex);
+  //     const {arr: sortedRight, index: rightIndices} = quickSort(right, rightIndex);
+  //     const mergedArray = new Float32Array(sortedLeft.length + 1 + sortedRight.length);
+  //     mergedArray.set(sortedLeft);
+  //     mergedArray[sortedLeft.length] = pivot;
+  //     mergedArray.set(sortedRight, sortedLeft.length + 1);
+  //     const mergedIndex = new Uint32Array(leftIndices.length + 1 + rightIndices.length);
+  //     mergedIndex.set(leftIndices);
+  //     mergedIndex[leftIndices.length] = pivotIndex;
+  //     mergedIndex.set(rightIndices, leftIndices.length + 1);
+  //     return {
+  //         arr: mergedArray,
+  //         index: mergedIndex
+  //     };
+  // }
+  
+
+  //   // 使用快速排序对 sizeList 数组进行排序
+  //   let depthIndexin = new Uint32Array(vertexCount);
+  //   for (let i = 0; i < vertexCount; i++) depthIndexin[i] = i;
+  //   const {arr: sortedArray, index: depthIndex} = quickSort(sizeList, depthIndexin);
+  //   console.log(vertexCount);
+  //   console.log("Indices after sorting:", depthIndex.length);
+
+
+  //   console.timeEnd("sort");
 
     lastProj = viewProj;
     self.postMessage({depthIndex, viewProj, vertexCount}, [depthIndex.buffer]);
@@ -200,7 +231,7 @@ function createWorker(self) {
       let lastView = viewProj;
       let lastt = sort_t;
       runSort(lastView, lastt);
-      console.log("cur_t", lastt);
+      // console.log("cur_t", lastt);
       setTimeout(() => {
         sortRunning = false;
         if (lastView !== viewProj) {
@@ -328,6 +359,11 @@ function createWorker(self) {
       texdata[16 * j + 8 + 2] = packHalf2x16(attrs.motion_4, attrs.motion_5);
       texdata[16 * j + 8 + 3] = packHalf2x16(attrs.motion_6, attrs.motion_7);
       texdata[16 * j + 8 + 4] = packHalf2x16(attrs.motion_8, 0);
+
+      let c = packHalf2x16(attrs.motion_0, attrs.motion_1);
+      let f = unpackHalf2x16(c);
+
+
 
       // rotation over time
       texdata[16 * j + 8 + 5] = packHalf2x16(attrs.omega_0, attrs.omega_1);
@@ -1003,11 +1039,12 @@ async function main() {
       gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
       // gl.uniform1f(u_time, Math.sin(Date.now() / 1000) / 2 + 1 / 2);
       // gl.uniform1f(u_time, Math.floor(Date.now() / 100) % 10 * 0.1); 
+      frame_t = Math.floor(Date.now() / 100) % 10 * 0.1;
       gl.uniform1f(u_time, frame_t); 
-      frame_t = frame_t + 0.1;
-      if (frame_t >= 0.9) {
-        frame_t = 0.0;
-      }
+      // frame_t = frame_t + 0.1;
+      // if (frame_t >= 0.9) {
+      //   frame_t = 0.0;
+      // }
 
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
@@ -1104,7 +1141,7 @@ async function main() {
       if (vertexCount > lastVertexCount || remaining === 0) {
         lastVertexCount = vertexCount;
         worker.postMessage({ texture: new Float32Array(buffer), remaining: remaining });
-        console.log("splat", remaining);
+        console.log("splat remain", remaining);
 
         const texdata = new Uint32Array(buffer);
         // console.log(texdata);
@@ -1121,7 +1158,7 @@ async function main() {
     }
   };
 
-  const url = params.get("url") ? new URL(params.get("url"), "https://huggingface.co/cakewalk/splat-data/resolve/main/") : "data/model (30).splatv";
+  const url = params.get("url") ? new URL(params.get("url"), "https://huggingface.co/cakewalk/splat-data/resolve/main/") : "https://ultized.github.io/data/model (41).splatv";
   const req = await fetch(url, { mode: "cors", credentials: "omit" });
   if (req.status != 200) throw new Error(req.status + " Unable to load " + req.url);
 
